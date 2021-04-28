@@ -1,6 +1,10 @@
 @echo off
+echo.
+echo ---------------生成APK签名文件脚本---------------
+echo.
+echo 用于生成APK签名文件(keystore)
+echo.
 
-echo/
 
 set /p alias=请输入别名:
 set /p fileName=请输入文件名:
