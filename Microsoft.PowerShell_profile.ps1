@@ -12,18 +12,68 @@ function admin {
   start-process powershell -verb runAs 
 }
 
+function isAdmin { 
+  $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+  $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
 function v2ray{
   D:\tools\v2ray\qv2ray-gui\qv2ray.exe
 }
 
 # build  aar for flutter project
-function BuildAAR([string] $version){
-  flutter build aar --no-release --no-profile --build-number $version
+function aar{
+  $workDir = Get-Location
+  # $buildNumber = git rev-list --count HEAD
+  $buildNumber = $args
+  flutter clean
+  flutter pub get
+  flutter build aar --no-release --no-profile --build-number $buildNumber
+  # 将生成的文件复制到指定文件夹，再推送到远程
+  robocopy build\host\outputs\repo D:\maven /s
+  cd D:\maven
+  git add -A
+  git commit -m $buildNumber
+  git pull
+  git push
+
+  # 直接在生成的目录下创建仓库，并关联远程，推送到远程
+  # cd build\host\outputs\repo
+  # git init 
+  # git add -A
+  # git commit -m $buildNumber
+  # git remote add origin "https://github.com/yfbx-repo/maven.git"
+  # git push -u -f origin master
+
+  Write-Host "
+  repositories {
+      maven {
+          url 'https://yfbx-repo.github.io/maven/'
+      }
+  }
+
+  dependencies {
+     debugImplementation 'com.yuxiaor.mobile.faraday:flutter_debug:$buildNumber'
+  }
+
+  " -ForegroundColor green
+
+  cd $workDir
+}
+
+function yxr{
+  apk --feishu -f Yuxiaor $args
 }
 
 # print git log in formated style
 function gitlog{
   git log --pretty=format:"%H - %ad, %an : %s" --date=iso
+}
+
+function cmt{
+  git add -A
+  git status
+  git commit -m $args
 }
 
 # adb 命令查看任务栈
@@ -46,21 +96,16 @@ function qt{
   D:\tools\QtScrcpy-win-x64-v1.6.0\QtScrcpy.exe
 }
 
-function demos{
-  D:
-  cd /
-  cd demos
+function startmogo{
+  start D:\docs\company\mogo
 }
 
-function works{
-  D:
-  cd /
-  cd Workspace
+function mogo{
+  type D:\docs\company\mogo\mogo_account.txt
 }
 
 # 设置别名
-Set-Alias aar BuildAAR
-Set-Alias a-stack ActivityStack
+Set-Alias astack ActivityStack
 
 # 启动时清除微软广告
 cls  
@@ -98,3 +143,6 @@ function prompt{
     $path = $pwd.path
     "$ "
 }
+
+
+chcp 65001
