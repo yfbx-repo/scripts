@@ -1,0 +1,17 @@
+配置 ssh 免密登录
+
+1. 生成ssh key
+2. 将pub key复制到服务端,输入以下命令，并输入密码
+    scp id_rsa.pub root@192.168.0.187:~/
+3. 用密码方式进入服务端
+4. 将公钥添加到authorized_keys
+   cat id_rsa.pub >> .ssh/authorized_keys
+
+注意：
+1. 如果 .ssh 目录不存在或authorized_keys 不存在可以自己创建
+2. 确认服务端sshd服务已启动 
+    查看 ps -ef| grep sshd
+    启动 service sshd startt
+3. 确认目标主机是否允许密匙对登录
+    查看 /etc/ssh/sshd_config 文件中 PubkeyAuthentication项是否为yes
+    如果不是，修改后重启sshd服务
