@@ -21,6 +21,31 @@ function isAdmin {
   $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+# 打开任务管理器
+function tasks{
+  C:\Windows\system32\taskmgr.exe /7
+}
+
+# 打开资源管理器
+function files{
+  C:\Windows\explorer.exe
+}
+
+# 编辑系统环境变量
+function env{
+  start D:\Documents\EditSystemEnv
+}
+
+# 上帝模式 
+function god{
+  start "C:\Users\Administrator\Desktop\GodMode.{ED7BA470-8E54-465E-825C-99712043E01C}"
+}
+
+
+function mac{
+  ssh ci@192.168.3.64
+}
+
 # 激活windows
 function kms($server,$key){
   if($server -eq $null){
