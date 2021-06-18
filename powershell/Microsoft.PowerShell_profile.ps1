@@ -9,6 +9,7 @@
 # 导入其他模块。必须使用绝对路径 
 Import-Module D:\\Documents\\PowerShell\\pack.psm1
 Import-Module D:\\Documents\\PowerShell\\shortcut.psm1
+Import-Module D:\\Documents\\PowerShell\\alias.psm1
 
 # 以管理员身份启动PowerShell
 function admin { 
@@ -20,44 +21,26 @@ function isAdmin {
   $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-
-# print git log in formated style
-function gitlog{
-  git log --pretty=format:"%H - %ad, %an : %s" --date=iso
-}
-
-function cmt{
-  git add -A
-  git status
-  git commit -m $args
-}
-
-# adb 命令查看任务栈
-function ActivityStack{
-  adb shell "dumpsys activity activities | sed -En -e '/Running activities/,/Run #0/p'"
-}
-
-# 查看APK签名信息
-function cert{
-   keytool -list -printcert -jarfile $args
-}
-
-# 查看 keystore 签名信息
-function keystore($password,$file){
-  if($password -eq $null){
-    echo "请输入密钥库密码"
+# 激活windows
+function kms($server,$key){
+  if($server -eq $null){
+    echo "请输入kms服务器地址"
+    echo "kms.03k.org"
+    echo "kms.chinancce.com"
+    echo "kms.lotro.cc"
+    echo "kms.library.hk"
+    echo "若以上服务器不可用，请自行寻找可用服务器"
     return
   }
-  if($file -eq $null){
-    echo "请输入密钥库路径"
-    return
-  }
-   keytool -list -v -storepass $password -keystore $file
-}
 
-# 查看 APK 信息
-function pkg{
-   aapt dump badging $args
+  if($key -eq $null){
+     echo "请输入密钥"
+    return 
+  }
+
+  slmgr /skms $server
+  slmgr /ipk $key
+  slmgr /ato
 }
 
 
@@ -85,11 +68,6 @@ function prompt{
     $path = $pwd.path
     "$ "
 }
-
-
-# 设置别名
-Set-Alias astack ActivityStack
-
 
 # 启动时清除微软广告
 cls  
