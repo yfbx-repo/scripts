@@ -5,7 +5,10 @@
 # 2. 执行 set-ExecutionPolicy RemoteSigned 更改脚本执行策略
 # 3. 配置脚本，执行 $profile 可以查看脚本路径
 # 
-# 
+
+# 导入其他模块。必须使用绝对路径 
+Import-Module D:\\Documents\\PowerShell\\pack.psm1
+Import-Module D:\\Documents\\PowerShell\\shortcut.psm1
 
 # 以管理员身份启动PowerShell
 function admin { 
@@ -17,53 +20,6 @@ function isAdmin {
   $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-function v2ray{
-  D:\tools\v2ray\qv2ray-gui\qv2ray.exe
-}
-
-# build  aar for flutter project
-function aar{
-  $workDir = Get-Location
-  # $buildNumber = git rev-list --count HEAD
-  $buildNumber = $args
-  flutter clean
-  flutter pub get
-  flutter build aar --no-release --no-profile --build-number $buildNumber
-  # 将生成的文件复制到指定文件夹，再推送到远程
-  robocopy build\host\outputs\repo D:\maven /s
-  cd D:\maven
-  git add -A
-  git commit -m $buildNumber
-  git pull
-  git push
-
-  # 直接在生成的目录下创建仓库，并关联远程，推送到远程
-  # cd build\host\outputs\repo
-  # git init 
-  # git add -A
-  # git commit -m $buildNumber
-  # git remote add origin "https://github.com/yfbx-repo/maven.git"
-  # git push -u -f origin master
-
-  Write-Host "
-  repositories {
-      maven {
-          url 'https://yfbx-repo.github.io/maven/'
-      }
-  }
-
-  dependencies {
-     debugImplementation 'com.yuxiaor.mobile.faraday:flutter_debug:$buildNumber'
-  }
-
-  " -ForegroundColor green
-
-  cd $workDir
-}
-
-function yxr{
-  apk --feishu -f Yuxiaor $args
-}
 
 # print git log in formated style
 function gitlog{
@@ -81,43 +37,29 @@ function ActivityStack{
   adb shell "dumpsys activity activities | sed -En -e '/Running activities/,/Run #0/p'"
 }
 
-# 打开取色器
-function color{
-  D:\tools\TakeColor.exe
+# 查看APK签名信息
+function cert{
+   keytool -list -printcert -jarfile $args
 }
 
-# 打开Android Studio
-function AS{
-  D:\tools\Android\android-studio\bin\studio64.exe
+# 查看 keystore 签名信息
+function keystore($password,$file){
+  if($password -eq $null){
+    echo "请输入密钥库密码"
+    return
+  }
+  if($file -eq $null){
+    echo "请输入密钥库路径"
+    return
+  }
+   keytool -list -v -storepass $password -keystore $file
 }
 
-# 打开QtScrcpy
-function qt{
-  D:\tools\QtScrcpy-win-x64-v1.6.0\QtScrcpy.exe
+# 查看 APK 信息
+function pkg{
+   aapt dump badging $args
 }
 
-function startmogo{
-  start D:\docs\company\mogo
-}
-
-function mogo{
-  type D:\docs\company\mogo\mogo_account.txt
-}
-
-# 设置别名
-Set-Alias astack ActivityStack
-
-# 启动时清除微软广告
-cls  
-# 启动时打印字符画
-type D:\tools\auto_pack\tag.txt
-
-# 如果打开时当前路径是System32这个系统文件夹，切换到桌面
-# $path = $pwd.path
-# if ( $path.split("\")[-1] -eq "System32" ) {
-#     $desktop = "C:\Users\" + $env:UserName + "\Desktop\"
-#     cd $desktop
-# }
 
 # 为PowerShell命令的配色，官方文档：https://docs.microsoft.com/en-us/powershell/module/psreadline/set-psreadlineoption?view=powershell-7.1&viewFallbackFrom=powershell-6
 Set-PSReadLineOption -Colors @{
@@ -145,4 +87,11 @@ function prompt{
 }
 
 
-chcp 65001
+# 设置别名
+Set-Alias astack ActivityStack
+
+
+# 启动时清除微软广告
+cls  
+# 启动时打印字符画
+cat D:\tools\auto_pack\tag.txt
