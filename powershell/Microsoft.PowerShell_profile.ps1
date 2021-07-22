@@ -12,7 +12,7 @@ Import-Module D:\\Documents\\PowerShell\\alias.psm1
 # build  aar for flutter project
 function aar($buildNumber){
   if($buildNumber -eq $null){
-    echo "Build Number is Required!"
+    printError "aar <build number>"
     return
   }
   $workDir = Get-Location
@@ -28,7 +28,7 @@ function aar($buildNumber){
   git pull
   git push
 
-  Write-Host "
+  printInfo "
   repositories {
       maven {
           url 'https://yfbx-repo.github.io/maven/'
@@ -39,7 +39,7 @@ function aar($buildNumber){
      debugImplementation 'com.yuxiaor.mobile.faraday:flutter_debug:$buildNumber'
   }
 
-  " -ForegroundColor green
+  "
 
   cd $workDir
 }
@@ -47,7 +47,7 @@ function aar($buildNumber){
 # 在指定分支打Yuxiaor debug包
 function yxr($branch) {
   if($branch -eq $null){
-    echo "请指定分支：yxr <branch> [description]"
+    printError "yxr <branch>"
     return
   }
   ssh ci@192.168.3.64 "./pack_apk.sh debug Yuxiaor $branch"
@@ -55,12 +55,8 @@ function yxr($branch) {
 
 # 在指定分支打指定渠道release包
 function release($flavor,$branch) {
-  if($flavor -eq $null){
-    echo "请指定渠道：release <flavor> <branch>"
-    return
-  }
-  if($branch -eq $null){
-    echo "请指定分支：release <flavor> <branch>"
+  if($flavor -eq $null -or $branch -eq $null){
+    printError "release <flavor> <branch>" 
     return
   }
   ssh ci@192.168.3.64 "./pack_apk.sh release $flavor $branch"
@@ -80,30 +76,27 @@ function phone{
   echo $wlan0
   $test = $wlan0 -match '((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}'
   $ip = $matches[0]
-  Write-Host 'IP:'$ip -ForegroundColor green
+  printInfo 'IP:'$ip -ForegroundColor green
   adb connect $ip
 }
 
 
 # 使用 aar 文件创建本地 maven 仓库
 function maven($aar,$groupId,$artifactId,$version){
-  if($aar -eq $null){
-    echo 'aar file is required!' -ForegroundColor red
+  if($aar -eq $null  -or $groupId -eq $null -or $artifactId -eq $null -or $version -eq $null){
+    printError "maven <aar> <group> <artifact> <version>"
     return;
   }
-  if($groupId -eq $null){
-    echo 'groupId is required!' -ForegroundColor red
-    return;
-  }
-  if($artifactId -eq $null){
-    echo 'artifactId is required!' -ForegroundColor red
-    return;
-  }
-  if($version -eq $null){
-    echo 'version is required!' -ForegroundColor red
-    return;
-  }
-  mvn deploy:deploy-file -Dfile="$aar" -Durl="file://." -DgroupId="$groupId" -DartifactId="$artifactId" -Dversion="$version"
+  # -Durl="file://." 在当前目录生成文件，若填的是远程仓库地址，则直接上传到远程仓库
+  mvn deploy:deploy-file -Dfile="$aar" -DgroupId="$groupId" -DartifactId="$artifactId" -Dversion="$version" -Durl="file://."
+}
+
+function printError($msg){
+  Write-Host $msg -ForegroundColor red
+}
+
+function printInfo($msg){
+  Write-Host $msg -ForegroundColor green
 }
 
 
