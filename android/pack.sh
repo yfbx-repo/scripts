@@ -1,75 +1,33 @@
 #
 # CI 打包
+# 命令格式：./pack.sh debug Yuxiaor
 #
 
-# 输入打包渠道
-flavors[0]="Yuxiaor"
-flavors[1]="Hazuk"
-flavors[2]="Zudashi"
-flavors[3]="Jinmao"
-flavors[4]="Fengle"
-flavors[5]="Jinxiu"
-flavors[6]="Yiguanjia"
-flavors[7]="Qianbs"
-flavors[8]="Hangzhu"
-flavors[9]="Yunjia"
-flavors[10]="Keru"
-flavors[11]="Ziyuan"
-flavors[12]="Fangzhuzhu"
-flavors[13]="Nuanhu"
-flavors[14]="Liwo"
+apiKey="6d040f4231bcda1dd5613cd27284f9bc"
+pgyer="https://www.pgyer.com/3sVc"
+imageKey="img_v2_2827ce84-1281-4036-8539-2b812cc9525g"
 
-echo
-echo "----- 选择打包渠道-----"
-echo "  1.寓小二"
-echo "  2.哈租客管家"
-echo "  3.租大师管家端"
-echo "  4.金茂公寓管家"
-echo "  5.丰乐伙伴"
-echo "  6.锦绣年华"
-echo "  7.易管家"
-echo "  8.仟佰顺管家"
-echo "  9.杭驻管家"
-echo "  10.云家"
-echo "  11.客如"
-echo "  12.需丰服务"
-echo "  13.房猪猪伙伴"
-echo "  14.暖虎伙伴"
-echo "  15.哩窝管家"
-echo
-read -r -p "Flavor Name: " flavorIndex
-flavor=${flavors[$flavorIndex - 1]}
-
-# 输入打包类型
-echo
-echo "----- 选择打包类型-----"
-echo "  1.debug"
-echo "  2.release"
-echo
-read -r -p "Build Type: " buildTypeIndex
-if [ $buildTypeIndex == 2 ]; then
-  buildType="Release"
-  apkPath="./app/build/outputs/apk/$flavor/release"
-else
-  buildType="Debug"
-  apkPath="./app/build/outputs/apk/$flavor/debug"
-fi
-
-# git 分支
-echo
-echo "当前分支：$(git symbolic-ref --short HEAD)"
-read -r -p "分支名(不填默认当前分支): " branchName
-echo
-if [[ -n $branchName ]]; then
-  git checkout $branchName
-fi
-git pull
+# 默认参数
+type="debug"
+flavor="Yuxiaor"
 branch=$(git symbolic-ref --short HEAD)
 
-# 描述
-echo
-read -r -p "更新内容(可不填): " desc
-echo
+#传入参数
+if [[ -n $1 ]]; then
+  type=$1
+fi
+
+if [[ -n $2 ]]; then
+  flavor=$2
+fi
+
+if [ $type = "release" ]; then
+  buildType="Release"
+  apkPath="./app/build/outputs/apk/$flavor/$type"
+else
+  buildType="Debug"
+  apkPath="./app/build/outputs/apk/$flavor/$type"
+fi
 
 # ----------------------------------------
 
@@ -82,11 +40,10 @@ files=$(ls $apkPath)
 for f in ${files}; do
   if [ "${f:0-3:3}" = "apk" ]; then
     file=$f
+    break
   fi
 done
 apk="$apkPath/$file"
-
-git checkout develop
 
 if [ -z "$file" ]; then
   echo
@@ -106,7 +63,7 @@ echo
 echo "上传到蒲公英..."
 echo
 curl "https://www.pgyer.com/apiv2/app/upload" \
--F "_api_key=6d040f4231bcda1dd5613cd27284f9bc" \
+-F "_api_key=$apiKey" \
 -F "file=@$apk"
 
 if [ $flavor != "Yuxiaor" ]; then
@@ -123,13 +80,12 @@ echo
 echo "发送飞书消息..."
 echo
 text="[
-  {\"tag\": \"text\",\"text\": \"branch: $branch\"},
-  {\"tag\": \"text\",\"text\": \"$desc\"}
+  {\"tag\": \"text\",\"text\": \"branch: $branch\"}
 ]"
 
 img="[{
 \"tag\": \"img\",
-\"image_key\": \"img_v2_2827ce84-1281-4036-8539-2b812cc9525g\",
+\"image_key\": \"$imageKey\",
 \"width\": 300,
 \"height\": 300
 }]"
@@ -137,7 +93,7 @@ img="[{
 url="[{
 \"tag\": \"a\",
 \"text\": \"$file\",
-\"href\": \"https://www.pgyer.com/3sVc\"
+\"href\": \"$pgyer\"
 }]"
 
 raw="{
