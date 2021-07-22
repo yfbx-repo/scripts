@@ -7,65 +7,103 @@
 # 
 
 # 导入其他模块。必须使用绝对路径 
-Import-Module D:\\Documents\\PowerShell\\pack.psm1
-Import-Module D:\\Documents\\PowerShell\\shortcut.psm1
 Import-Module D:\\Documents\\PowerShell\\alias.psm1
 
-# 以管理员身份启动PowerShell
-function admin { 
-  start-process powershell -verb runAs 
-}
-
-function isAdmin { 
-  $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-  $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-}
-
-# 打开任务管理器
-function tasks{
-  C:\Windows\system32\taskmgr.exe /7
-}
-
-# 打开资源管理器
-function files{
-  C:\Windows\explorer.exe
-}
-
-# 编辑系统环境变量
-function env{
-  start D:\Documents\EditSystemEnv
-}
-
-# 上帝模式 
-function god{
-  start "C:\Users\Administrator\Desktop\GodMode.{ED7BA470-8E54-465E-825C-99712043E01C}"
-}
-
-
-function mac{
-  ssh ci@192.168.3.64
-}
-
-# 激活windows
-function kms($server,$key){
-  if($server -eq $null){
-    echo "请输入kms服务器地址"
-    echo "kms.03k.org"
-    echo "kms.chinancce.com"
-    echo "kms.lotro.cc"
-    echo "kms.library.hk"
-    echo "若以上服务器不可用，请自行寻找可用服务器"
+# build  aar for flutter project
+function aar($buildNumber){
+  if($buildNumber -eq $null){
+    echo "Build Number is Required!"
     return
   }
+  $workDir = Get-Location
+  # $buildNumber = git rev-list --count HEAD
+  flutter clean
+  flutter pub get
+  flutter build aar --no-release --no-profile --build-number $buildNumber
+  # 将生成的文件复制到指定文件夹，再推送到远程
+  robocopy build\host\outputs\repo D:\maven /s
+  cd D:\maven
+  git add -A
+  git commit -m $buildNumber
+  git pull
+  git push
 
-  if($key -eq $null){
-     echo "请输入密钥"
-    return 
+  Write-Host "
+  repositories {
+      maven {
+          url 'https://yfbx-repo.github.io/maven/'
+      }
   }
 
-  slmgr /skms $server
-  slmgr /ipk $key
-  slmgr /ato
+  dependencies {
+     debugImplementation 'com.yuxiaor.mobile.faraday:flutter_debug:$buildNumber'
+  }
+
+  " -ForegroundColor green
+
+  cd $workDir
+}
+
+# 在指定分支打Yuxiaor debug包
+function yxr($branch) {
+  if($branch -eq $null){
+    echo "请指定分支：yxr <branch> [description]"
+    return
+  }
+  ssh ci@192.168.3.64 "./pack_apk.sh debug Yuxiaor $branch"
+}
+
+# 在指定分支打指定渠道release包
+function release($flavor,$branch) {
+  if($flavor -eq $null){
+    echo "请指定渠道：release <flavor> <branch>"
+    return
+  }
+  if($branch -eq $null){
+    echo "请指定分支：release <flavor> <branch>"
+    return
+  }
+  ssh ci@192.168.3.64 "./pack_apk.sh release $flavor $branch"
+}
+
+function phh{
+  flutter build web
+  robocopy build\web D:\demos\phh /s
+  git add -A
+  git commit -m "update"
+  git pull
+  git push
+}
+
+function phone{
+  $wlan0 = adb shell netcfg | findStr wlan0
+  echo $wlan0
+  $test = $wlan0 -match '((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}'
+  $ip = $matches[0]
+  Write-Host 'IP:'$ip -ForegroundColor green
+  adb connect $ip
+}
+
+
+# 使用 aar 文件创建本地 maven 仓库
+function maven($aar,$groupId,$artifactId,$version){
+  if($aar -eq $null){
+    echo 'aar file is required!' -ForegroundColor red
+    return;
+  }
+  if($groupId -eq $null){
+    echo 'groupId is required!' -ForegroundColor red
+    return;
+  }
+  if($artifactId -eq $null){
+    echo 'artifactId is required!' -ForegroundColor red
+    return;
+  }
+  if($version -eq $null){
+    echo 'version is required!' -ForegroundColor red
+    return;
+  }
+  mvn deploy:deploy-file -Dfile="$aar" -Durl="file://." -DgroupId="$groupId" -DartifactId="$artifactId" -Dversion="$version"
 }
 
 
@@ -94,7 +132,9 @@ function prompt{
     "$ "
 }
 
+# 编码格式，避免中文乱码
+chcp 65001
 # 启动时清除微软广告
 cls  
 # 启动时打印字符画
-cat D:\tools\auto_pack\tag.txt
+cat D:\tools\auto_pack\tag.txt | Write-Host -ForegroundColor green
