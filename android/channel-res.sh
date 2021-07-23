@@ -3,10 +3,10 @@
 # 
 
 # 需要的资源
-image=$1
-logo=$2
-appName=$3
-color=$4
+read -r -p "launcher: " image
+read -r -p "logo: " logo
+read -r -p "app name: " appName
+read -r -p "primary color: " color
 
 # 创建文件夹
 mkdir res
