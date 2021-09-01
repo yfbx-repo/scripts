@@ -1,0 +1,146 @@
+#!/bin/bash
+# 
+# apk [relase/debug] [flavor]
+# 
+# 
+
+
+# 
+# 默认参数
+# 
+image_key=""
+flavor=""
+type="debug"
+branch=$(git symbolic-ref --short HEAD)
+
+
+# 
+# 传入参数
+# 
+if [ -n "$1" ]; then
+  type=$1
+fi
+
+if [-n "$2" ];then
+  flavor=$2
+  flavor_mode="--flavor $2"
+fi
+
+
+if [ $type = "release" ]; then
+    mode="Release"
+  else
+    mode="Debug"
+fi
+
+
+# 
+# 原生打包
+# 
+if [ -e "./gradlew.bat" ];then
+  ./gradlew clean
+  ./gradlew "assemble$flavor$mode"
+fi
+
+# 
+# flutter打包
+# 
+if [ -e "./pubspec.yaml" ];then
+  flutter clean
+  flutter pub get
+  flutter build apk --$type $flavor_mode
+fi
+
+
+if [ $? -eq 0 ]; then
+  echo "打包成功!"
+else
+  echo "打包失败!"
+  exit 1
+fi
+
+# 
+# 查找APK
+# 
+apks=()
+files=$(find . -name "*.apk")
+for f in ${files}; do
+  apks[${#apks[*]}]="$f"
+done
+
+apk=${apks[0]}
+file_name=$(basename "$apk")
+
+echo
+if [ -z "$apk" ]; then
+  echo "APK Not Found!"
+  exit 1
+else
+  echo "分支: $branch"
+  echo "APK: $apk"
+fi
+echo
+
+
+
+echo
+echo "上传蒲公英..."
+echo 
+api_pgyer="https://www.pgyer.com/apiv2/app/upload"
+api_key="6d040f4231bcda1dd5613cd27284f9bc"
+short_cut=$(curl $api_pgyer -F "_api_key=$api_key" -F "file=@$apk" | jq -r '.data.buildShortcutUrl')
+href="https://www.pgyer.com/$short_cut"
+
+echo
+echo "蒲公英下载链接:"
+echo $href
+echo 
+
+
+echo
+echo "发送飞书消息..."
+echo 
+
+if [ -n $image_key ];then
+  image_json="
+  [
+      {
+          \"tag\": \"img\",
+          \"image_key\": \"$image_key\",
+          \"width\": 300,
+          \"height\": 300
+      }
+  ],
+    "
+else
+  image_json=""
+fi
+
+params="{
+      \"msg_type\": \"post\",
+      \"content\": {
+          \"post\": {
+              \"zh_cn\": {
+                  \"title\": \"Android APK\",
+                  \"content\": [
+                      $image_json
+                      [
+                          {
+                              \"tag\": \"a\",
+                              \"text\": \"$file_name\",
+                              \"href\": \"$href\"
+                          }
+                      ],
+                      [
+                          {
+                              \"tag\": \"text\",
+                              \"text\": \"branch: $branch\"
+                          }
+                      ]
+                  ]
+              }
+          }
+      }
+  }"
+api_feishu="https://open.feishu.cn/open-apis/bot/v2/hook/13bad1ac-7482-4aa4-a744-a5db6ca119b1"
+curl $api_feishu --header "Content-Type: application/json" --data-raw "$params" | jq .

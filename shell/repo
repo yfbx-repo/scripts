@@ -1,0 +1,100 @@
+#!/bin/bash
+ 
+
+#
+# 为aar生成pom文件
+#
+function mvn_pom(){
+  aar=$1
+  package=$2
+
+
+  if [ ${aar##*.} != "aar" ];then
+    echo "$aar is invalid!"
+    return
+  fi
+  
+  if [ -f $aar ];then
+    echo "aar: $(basename $aar)"
+  else
+    echo "$aar is not found or not valid!"
+    return  
+  fi
+
+  group=${package%%:*}
+  echo "group: $group"
+
+  tmp=${package#*:}
+  artifact=${tmp%:*}
+  echo "artifact: $artifact"
+
+  version=${package##*:}
+  echo "version: $version"
+
+  
+  mvn deploy:deploy-file \
+  -Dfile="$aar" \
+  -DgroupId="$group" \
+  -DartifactId="$artifact" \
+  -Dversion="$version" \
+  -Durl="file://."
+  
+  if [ $? -eq 0 ]; then
+    echo "生成成功"
+    echo "implementation '${group}:${artifact}:${version}'"
+  else
+    echo "生成出错"
+  fi  
+}
+
+# 
+# 上传到远程Maven库
+# 
+function mvn_upload(){
+  aar=$1
+  
+  if [ ${aar##*.} != "aar" ];then
+    echo "$aar is invalid!"
+    return
+  fi
+  
+  if [ -f $aar ];then
+    basename $aar
+  else
+    echo "$aar is not found or not valid!"
+    return  
+  fi
+
+  
+  MAVEN='http://nexus.dev.yuxiaor.cn/repository/mobile/' 
+  
+  path=$(dirname $1)
+  pom=$(find $path -name "*.pom")
+  aar=$(find $path -name "*.aar")
+  
+  mvn deploy:deploy-file -e -q -DrepositoryId=yxr -Durl=$MAVEN -DpomFile=$pom -Dfile=$aar
+  
+  if [ $? -eq 0 ]; then
+    echo "Succeed!"
+  else
+    echo "Failed!"
+  fi  
+}
+
+
+
+
+case $# in
+  0)
+    echo "repo <aar> [options]"
+    ;;
+  1)
+    mvn_upload $@
+    ;;
+  2)
+    mvn_pom $@
+    ;;
+  *)
+    echo "invalid arguments!"
+    ;;    
+esac
