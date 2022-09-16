@@ -1,4 +1,35 @@
 
+# 
+# 上传图片到飞书
+# app_id
+# app_secret
+# 
+function fly_image(){
+  if [ -z $1 ]; then
+    echo "command: fly_image <image>"
+    return
+  fi
+
+  image=$1
+    
+  params="{
+    \"app_id\": \"cli_a1ceacbb0eb8900b\",
+    \"app_secret\": \"eEdqUP0PJlhSJIf9Dvq65S4Owr0NPXIb\"
+  }"
+  # 请求token
+  token_url="https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal/"    
+  token=$(curl $token_url --header "Content-Type: application/json" --data-raw $params | jq -r '.tenant_access_token')
+  echo 
+  echo "token: $token"
+  echo 
+  # 上传图片
+  image_url="https://open.feishu.cn/open-apis/image/v4/put/"
+  image_key=$(curl $image_url -F "image_type=message" -F "image=@$image" -H "Authorization:Bearer $token" | jq -r '.data.image_key')
+  echo 
+  echo "image_key: $image_key"
+  echo 
+
+}
 
 # 
 #  查看 keystore 信息
@@ -46,4 +77,18 @@ function sign_apk(){
   read -r -p "签名文件(keystore): " keystore
   read -r -p "签名文件别名: " aliass
   jarsigner -verbose -keystore "$keystore" -signedjar signed.apk "$apk" "$aliass"
+}
+
+
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*"
+}
+
+logTitle() {
+    log "-------------------------------- $* --------------------------------"
+}
+
+execCommand() {
+    log "$@"
+    result=$(eval $@)
 }
